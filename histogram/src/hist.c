@@ -1,9 +1,11 @@
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include "bmp.h"
 
 enum {
-    MAX_PIXEL_VALUE = 255,
+    MAX_PIXEL_VALUE = 256,
     NBUCKETS = 16,
     BORDER = MAX_PIXEL_VALUE / NBUCKETS
 };
@@ -20,9 +22,11 @@ void print_histogram();
 
 int main(int argc, char *argv[])
 {
+    int i;
+    long nproc;
     struct data *d;
     char *bitmap_path;
-    pthread_t t;
+    pthread_t *threads;
 
     if (argc < 2) {
         fprintf(stderr, "Usage: %s filename.bmp\n", argv[0]);
@@ -35,13 +39,35 @@ int main(int argc, char *argv[])
         printf("Bitmap %s loaded\n", bitmap_path);
     }
 
-    /* TODO: fill image histogram concurrently */
-    pthread_create(&t, NULL, hist_updater, d);
-    pthread_join(t, NULL);
+    nproc = sysconf(_SC_NPROCESSORS_ONLN);
+    if (nproc < 0) {
+        perror("sysconf");
+        return -1;
+    }
+    threads = malloc(sizeof *threads * nproc);
+    if (threads == NULL) {
+        perror("malloc");
+        return -1;
+    }
+    for (i = 0; i < nproc; ++i) {
+        struct data chunk;
+        chunk.sz = d->sz / nproc;
+        chunk.pixels = &d->pixels[i * chunk.sz];
 
+        if (pthread_create(&threads[i], NULL, hist_updater, &chunk)) {
+            perror("pthread_create");
+            nproc = i;
+            break;
+        }
+    }
+    for (i = 0; i < nproc; ++i) {
+        pthread_join(threads[i], NULL);
+    }
+    free(threads);
+    destroy_bitmap(d);
+        
     print_histogram();
 
-    destroy_bitmap(d);
     return 0;
 }
 
@@ -61,9 +87,18 @@ void *hist_updater(void *data)
 void print_histogram()
 {
     int i;
-    printf("\n%s\n", "-----");
+    printf("\nStandard Objective Pixel Luminance Histogram\n");
+    printf("%s\n", "-----");
+    printf("%s", "L: ");
     for (i = 0; i < NBUCKETS; ++i) {
-        printf("%d ", histogram[i]);
+        int lhs = BORDER * i;
+        int rhs = lhs + BORDER;
+        printf("%3d-%3d ", lhs, rhs);
+    }
+    printf("\n%s\n", "-----");
+    printf("%s", "H: ");
+    for (i = 0; i < NBUCKETS; ++i) {
+        printf("%7d ", histogram[i]);
     }
     printf("\n%s\n", "-----");
 }
