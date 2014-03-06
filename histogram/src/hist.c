@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include "hpctimer.h"
 #include "bmp.h"
 
 enum {
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
     long nproc;
     struct data *d;
     char *bitmap_path;
+    double t;
     pthread_t *threads;
 
     nproc = -1;
@@ -56,6 +58,7 @@ int main(int argc, char *argv[])
         return -1;
     }
 
+    t = hpctimer_wtime();
     for (i = 0; i < nproc; ++i) {
         int offset;
         struct data *chunk = malloc(sizeof *chunk);
@@ -80,10 +83,12 @@ int main(int argc, char *argv[])
     for (i = 0; i < nproc; ++i) {
         pthread_join(threads[i], NULL);
     }
+    t = hpctimer_wtime() - t;
     free(threads);
     destroy_bitmap(d);
         
     print_histogram();
+    printf("Time consumed: %f\n", t);
 
     return 0;
 }
