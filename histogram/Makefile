@@ -1,6 +1,6 @@
 CC := gcc
 MKDIR := mkdir -p
-CFLAGS := -Wall -Werror -Wextra -pedantic -D_GNU_SOURCE -fgnu-tm -g
+CFLAGS += -Wall -Werror -Wextra -pedantic -D_GNU_SOURCE -fgnu-tm -g
 LDFLAGS := -pthread
 PROGS := bin/hist
 OBJS := $(patsubst src/%.c,obj/%.o, $(wildcard src/*.c))
@@ -14,7 +14,7 @@ build: $(PROGS)
 clean:
 	rm -rf $(PROGS) $(OBJS)
 
-bin/hist: obj/hist.o obj/bmp.o obj/files.o
+bin/hist: obj/hist.o obj/bmp.o obj/files.o obj/hpctimer.o
 
 $(PROGS):
 	@$(MKDIR) $(dir $@)
