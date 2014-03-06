@@ -1,6 +1,5 @@
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "bmp.h"
 #include "files.h"
@@ -114,3 +113,24 @@ void destroy_bitmap(struct data *d)
     free(d);
 }
 
+struct data *generate_fake_bitmap(size_t sz)
+{
+    unsigned short bitcount = 24;
+    size_t sz_bytes;
+    struct data *dat;
+    size_t i;
+
+    dat = malloc(sizeof *dat);
+
+    sz_bytes = sz * (bitcount / 8);
+
+    dat->sz = sz;
+    dat->pixels = malloc(sz_bytes);
+
+    for (i = 0; i < dat->sz; ++i) {
+        dat->pixels[i].red = i % 255;
+        dat->pixels[i].green = i % 255;
+        dat->pixels[i].blue = i % 255;
+    }
+    return dat;
+}
