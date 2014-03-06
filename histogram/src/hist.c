@@ -28,33 +28,50 @@ int main(int argc, char *argv[])
     char *bitmap_path;
     pthread_t *threads;
 
+    nproc = -1;
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s filename.bmp\n", argv[0]);
+        fprintf(stderr, "Usage: %s filename.bmp [number_of_threads]\n", argv[0]);
         return -1;
     }
     bitmap_path = argv[1];
+    if (argc > 2) {
+        nproc = atoi(argv[2]);
+    }
 
     d = load_bitmap(bitmap_path);
     if (d != NULL) {
         printf("Bitmap %s loaded\n", bitmap_path);
     }
 
-    nproc = sysconf(_SC_NPROCESSORS_ONLN);
-    if (nproc < 0) {
-        perror("sysconf");
-        return -1;
+    if (nproc <= 0) {
+        nproc = sysconf(_SC_NPROCESSORS_ONLN);
+        if (nproc < 0) {
+            perror("sysconf");
+            return -1;
+        }
     }
     threads = malloc(sizeof *threads * nproc);
     if (threads == NULL) {
         perror("malloc");
         return -1;
     }
-    for (i = 0; i < nproc; ++i) {
-        struct data chunk;
-        chunk.sz = d->sz / nproc;
-        chunk.pixels = &d->pixels[i * chunk.sz];
 
-        if (pthread_create(&threads[i], NULL, hist_updater, &chunk)) {
+    for (i = 0; i < nproc; ++i) {
+        int offset;
+        struct data *chunk = malloc(sizeof *chunk);
+
+        /*
+         * XXX: some pixels would not be processed if number of pixels not
+         * divided by threads evenly
+         */
+        chunk->sz = d->sz / nproc;
+        if (chunk->sz * (i + 1) > d->sz) {
+            chunk->sz = d->sz - chunk->sz * i;
+        }
+        offset = chunk->sz * i;
+        chunk->pixels = &(d->pixels[offset]);
+
+        if (pthread_create(&threads[i], NULL, hist_updater, chunk)) {
             perror("pthread_create");
             nproc = i;
             break;
@@ -77,10 +94,12 @@ void *hist_updater(void *data)
     struct data *d = data;
     for (i = 0; i < d->sz; ++i) {
         struct pixel p = d->pixels[i];
+
         unsigned int luminance = rY * p.red + gY * p.green + bY * p.blue;
 
         __sync_fetch_and_add(&histogram[luminance / BORDER], 1);
     }
+    free(d);
     return NULL;
 }
 
