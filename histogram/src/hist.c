@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
      */
 
     if (bitmap_path == NULL) {
-        d = generate_fake_bitmap(10000000);
+        d = generate_fake_bitmap(FAKE_BMAP_SIZE);
     } else {
         d = load_bitmap(bitmap_path);
 
