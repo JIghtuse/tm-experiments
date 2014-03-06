@@ -18,13 +18,18 @@ const double bY = 0.0722;
 
 int histogram[NBUCKETS];
 
+#ifdef _USE_MUTEX
+static pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 void *hist_updater(void *data);
 void print_histogram();
+void print_usage(char *binary);
 
 int main(int argc, char *argv[])
 {
     int i;
-    long nproc;
+    int nproc;
     struct data *d;
     char *bitmap_path;
     double t;
@@ -32,15 +37,25 @@ int main(int argc, char *argv[])
 
     nproc = -1;
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s filename.bmp [number_of_threads]\n", argv[0]);
-        return -1;
+        bitmap_path = NULL;
+    } else {
+        bitmap_path = argv[1];
     }
-    bitmap_path = argv[1];
     if (argc > 2) {
         nproc = atoi(argv[2]);
     }
 
-    d = load_bitmap(bitmap_path);
+    /* 
+     * TODO: handle args better, for example allow set nproc without setting
+     * path
+     */
+
+    if (bitmap_path == NULL) {
+        d = generate_fake_bitmap(10000000);
+    } else {
+        d = load_bitmap(bitmap_path);
+
+    }
     if (d != NULL) {
         printf("Bitmap %s loaded\n", bitmap_path);
     }
@@ -57,6 +72,7 @@ int main(int argc, char *argv[])
         perror("malloc");
         return -1;
     }
+    printf("%d threads to be launched\n", nproc);
 
     t = hpctimer_wtime();
     for (i = 0; i < nproc; ++i) {
@@ -85,6 +101,7 @@ int main(int argc, char *argv[])
     }
     t = hpctimer_wtime() - t;
     free(threads);
+    printf("%d threads finished work\n", nproc);
     destroy_bitmap(d);
         
     print_histogram();
@@ -97,13 +114,27 @@ void *hist_updater(void *data)
 {
     size_t i;
     struct data *d = data;
-    for (i = 0; i < d->sz; ++i) {
-        struct pixel p = d->pixels[i];
+#ifdef _USE_TSX
+    __transaction_atomic {
+#endif
+        for (i = 0; i < d->sz; ++i) {
+            struct pixel p = d->pixels[i];
 
-        unsigned int luminance = rY * p.red + gY * p.green + bY * p.blue;
+            unsigned int luminance = rY * p.red + gY * p.green + bY * p.blue;
 
-        __sync_fetch_and_add(&histogram[luminance / BORDER], 1);
+#if defined _USE_TSX
+            ++histogram[luminance/BORDER];
+#elif defined _USE_ATOMIC
+            __sync_fetch_and_add(&histogram[luminance / BORDER], 1);
+#elif defined _USE_MUTEX
+            pthread_mutex_lock(&mut);
+            ++histogram[luminance/BORDER];
+            pthread_mutex_unlock(&mut);
+#endif
+        }
+#ifdef _USE_TSX
     }
+#endif
     free(d);
     return NULL;
 }
@@ -125,4 +156,9 @@ void print_histogram()
         printf("%7d ", histogram[i]);
     }
     printf("\n%s\n", "-----");
+}
+
+void print_usage(char *binary)
+{
+    fprintf(stderr, "Usage: %s [filename.bmp] [number_of_threads]\n", binary);
 }
