@@ -1,4 +1,4 @@
-CC := gcc
+CC := gcc-4.8
 MKDIR := mkdir -p
 CFLAGS += -Wall -Werror -Wextra -pedantic -D_GNU_SOURCE -fgnu-tm -g
 CFLAGS += -D_USE_TSX -DFAKE_BMAP_SIZE=10000000
