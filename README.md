@@ -1,6 +1,8 @@
 tm-experiments
 ==============
 
+[![Build status](https://travis-ci.org/JIghtuse/tm-experiments.png?branch=master)](https://travis-ci.org/JIghtuse/tm-experiments)
+
 Transactional memory (mostly Intel® TSX) experiments
 
 histogram
