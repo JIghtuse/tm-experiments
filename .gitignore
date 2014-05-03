@@ -25,3 +25,7 @@ obj/
 *.swp
 .ycm_extra_conf.py
 .ycm_extra_conf.pyc
+
+# Project specific binaries/objects
+haskell-example/transfer
+haskell-example/transfer.hi

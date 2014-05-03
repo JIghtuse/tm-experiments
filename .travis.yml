@@ -1,0 +1,4 @@
+install:
+  - sudo apt-get install clojure ghc
+script:
+  - make

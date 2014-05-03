@@ -13,7 +13,7 @@ shared histogram. Such task comprises the core compute of many HPC workloads.
 
 Building:
 
-    CFLAGS=-D_USE_TSX make
+    make -C histogram
 
 Usage:
 
@@ -31,3 +31,20 @@ core.
 Usage:
 
     clojure clojure-example/transfer.clj
+
+
+haskell-example
+---------------
+Example taken from Simon Peyton Jones article in School of Haskell:
+[Software Transactional Memory](https://www.fpcomplete.com/school/advanced-haskell/beautiful-concurrency/3-software-transactional-memory)
+
+The same example as in Clojure, transfering some amount of money from one
+account to another.
+
+Building:
+
+    ghc haskell-example/transfer.hs
+
+Usage:
+
+    haskell-example/transfer
