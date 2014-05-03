@@ -1,6 +1,7 @@
 CC := gcc
 MKDIR := mkdir -p
 CFLAGS += -Wall -Werror -Wextra -pedantic -D_GNU_SOURCE -fgnu-tm -g
+CFLAGS += -D_USE_TSX -DFAKE_BMAP_SIZE=10000000
 LDFLAGS := -pthread
 PROGS := bin/hist
 OBJS := $(patsubst src/%.c,obj/%.o, $(wildcard src/*.c))
@@ -12,7 +13,7 @@ all: build
 build: $(PROGS)
 
 clean:
-	rm -rf $(PROGS) $(OBJS)
+	rm -rf $(PROGS) $(OBJS) obj/*.d
 
 bin/hist: obj/hist.o obj/bmp.o obj/files.o obj/hpctimer.o
 
