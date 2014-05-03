@@ -18,3 +18,16 @@ Building:
 Usage:
 
     ./bin/hist ./content/bmp_24.bmp
+
+
+clojure-example
+---------------
+Examples stolen from [sw1nn](https://github.com/sw1nn) blog: [Clojure STM -
+What? Why? How?](http://sw1nn.com/blog/2012/04/11/clojure-stm-what-why-how/)
+
+A few examples of Clojure STM, the single language which supports TM in the
+core.
+
+Usage:
+
+    clojure clojure-example/transfer.clj
